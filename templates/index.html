@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f7ed">
+  <title>果實時光 — 水果播種成熟日計算機</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>body{background:radial-gradient(ellipse at 10% 0%,#e5efcf 0,transparent 36%),#f7f8f1}.serif{font-family:Georgia,"Noto Serif TC",serif}</style>
+</head>
+<body class="min-h-screen text-stone-800">
+  <header class="mx-auto flex max-w-6xl items-center justify-between px-5 py-5"><a class="serif text-xl font-bold tracking-wide text-green-900" href="/">🍃 果實時光</a><span class="rounded-full border border-green-900/10 bg-white/70 px-3 py-1 text-xs text-green-900">種下今天，等待甜蜜</span></header>
+  <main class="mx-auto grid max-w-6xl gap-8 px-5 pb-16 pt-5 lg:grid-cols-[0.9fr_1.1fr]">
+    <section class="py-5 lg:py-12"><p class="mb-3 text-sm font-semibold tracking-[.2em] text-green-700">GROW AT YOUR OWN PACE</p><h1 class="serif max-w-xl text-4xl font-bold leading-tight text-green-950 sm:text-5xl">每一顆果實，<br>都有自己的時間。</h1><p class="mt-5 max-w-lg leading-7 text-stone-600">選擇想種的水果，看看從播種到採收大約需要多久。用一點耐心，迎接果園裡的好消息。</p>
+      <div class="mt-8 grid max-w-lg grid-cols-3 gap-3 text-center"><div class="rounded-2xl bg-white/75 p-4"><div class="text-2xl">☀️</div><p class="mt-2 text-xs text-stone-600">依環境調整</p></div><div class="rounded-2xl bg-white/75 p-4"><div class="text-2xl">🌱</div><p class="mt-2 text-xs text-stone-600">生長階段預估</p></div><div class="rounded-2xl bg-white/75 p-4"><div class="text-2xl">🌦️</div><p class="mt-2 text-xs text-stone-600">今日天氣參考</p></div></div>
+    </section>
+    <section class="rounded-[2rem] border border-white bg-white/90 p-5 shadow-xl shadow-green-950/5 sm:p-8">
+      <h2 class="serif text-2xl font-bold text-green-950">開始規劃你的果實</h2><p class="mt-1 text-sm text-stone-500">填入種植資訊，取得成熟時間估算。</p>
+      {% if error %}<div role="alert" class="mt-5 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-800">{{ error }}</div>{% endif %}
+      <form method="post" class="mt-6 space-y-4">
+        <label class="block text-sm font-medium">水果品種<select id="fruit" name="fruit" class="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-3 focus:border-green-700 focus:outline-none"><option value="自訂水果與天數" {% if form.fruit == '自訂水果與天數' %}selected{% endif %}>自訂水果與天數</option>{% for name, data in fruits.items() %}<option value="{{ name }}" {% if form.fruit == name %}selected{% endif %}>{{ name }}（約 {{ data.days }} 天）</option>{% endfor %}</select></label>
+        <div id="customFields" class="grid gap-3 sm:grid-cols-2"><label class="block text-sm font-medium">自訂水果名稱<input name="custom_name" value="{{ form.get('custom_name','') }}" maxlength="30" class="mt-1.5 w-full rounded-xl border border-stone-200 px-3 py-3" placeholder="例如：黃金奇異果"></label><label class="block text-sm font-medium">預估成熟天數<input name="custom_days" type="number" min="1" max="3650" value="{{ form.get('custom_days','100') }}" class="mt-1.5 w-full rounded-xl border border-stone-200 px-3 py-3" placeholder="1–3650 天"></label></div>
+        <div class="grid gap-4 sm:grid-cols-2"><label class="block text-sm font-medium">播種日期<input required name="sowing_date" type="date" value="{{ form.sowing_date }}" class="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-3"></label><label class="block text-sm font-medium">種植環境<select name="environment" class="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-3">{% for name in environments %}<option {% if form.environment == name %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label></div>
+        <label class="block text-sm font-medium">查詢地區<select name="city" class="mt-1.5 w-full rounded-xl border border-stone-200 bg-white px-3 py-3">{% for name in cities %}<option {% if form.city == name %}selected{% endif %}>{{ name }}</option>{% endfor %}</select></label>
+        <button class="w-full rounded-xl bg-green-800 px-5 py-3.5 font-semibold text-white shadow-lg shadow-green-900/15 transition hover:bg-green-900" type="submit">計算成熟日 <span aria-hidden="true">→</span></button>
+      </form>
+      {% if result %}<div class="mt-7 border-t border-stone-100 pt-6" aria-live="polite">
+        <div class="rounded-2xl bg-green-50 p-5"><p class="text-sm font-medium text-green-800">{{ result.fruit }} · 預估成熟日</p><p class="serif mt-1 text-2xl font-bold text-green-950">{{ result.maturity_date_display }}</p><p class="mt-2 text-sm text-green-800">{% if result.harvest_ready %}已進入可採收期{% else %}距離今天還有 {{ result.days_remaining }} 天{% endif %} · {{ result.environment }}調整後約 {{ result.adjusted_days }} 天</p></div>
+        <h3 class="mt-6 font-bold text-stone-800">生長階段時間軸</h3><ol class="mt-3 space-y-3">{% for stage in result.stages %}<li class="flex gap-3"><span class="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-green-600"></span><div><p class="text-sm font-semibold">{{ stage.name }}</p><p class="text-xs text-stone-500">{{ stage.start }} 至 {{ stage.end }}</p></div></li>{% endfor %}</ol>
+        <h3 class="mt-6 font-bold">種植小撇步</h3><div class="mt-2 grid gap-2 text-sm text-stone-600 sm:grid-cols-3"><p class="rounded-xl bg-stone-50 p-3"><b class="text-green-800">☀ 日照</b><br>{{ result.care.sun }}</p><p class="rounded-xl bg-stone-50 p-3"><b class="text-green-800">💧 澆水</b><br>{{ result.care.water }}</p><p class="rounded-xl bg-stone-50 p-3"><b class="text-green-800">土壤</b><br>{{ result.care.soil }}</p></div><p class="mt-3 text-sm leading-6 text-stone-600">{{ result.care.tips }}</p>
+        <aside class="mt-5 rounded-xl border border-sky-100 bg-sky-50 p-4"><h3 class="text-sm font-bold text-sky-950">{{ result.city }}今日天氣與照護建議</h3>{% if result.weather.available %}<p class="mt-1 text-sm text-sky-900">氣溫 {{ result.weather.temperature_min }}–{{ result.weather.temperature_max }}°C · 降雨機率 {{ result.weather.rain_probability }}%</p><p class="mt-1 text-sm text-sky-800">{{ result.weather.advice }}</p>{% else %}<p class="mt-1 text-sm text-sky-800">{{ result.weather.message }}</p>{% endif %}</aside>
+      </div>{% endif %}
+    </section>
+  </main>
+  <footer class="pb-8 text-center text-xs text-stone-400">成熟時間為栽培估算，會受品種、氣候與照護方式影響。</footer>
+  <script>const fruitSelect=document.getElementById('fruit'),customFields=document.getElementById('customFields');function syncCustom(){const active=fruitSelect.value==='自訂水果與天數';customFields.hidden=!active;customFields.querySelectorAll('input').forEach(input=>input.disabled=!active)}fruitSelect.addEventListener('change',syncCustom);syncCustom();</script>
+</body></html>
